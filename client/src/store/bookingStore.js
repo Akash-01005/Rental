@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { axiosConfig } from '../libs';
 
 const useBookingStore = create((set, get) => ({
-    bookings: [],
+    userBookings: [],
     currentBooking: null,
     loading: false,
     error: null,
@@ -16,19 +16,48 @@ const useBookingStore = create((set, get) => ({
             const queryParams = new URLSearchParams({ page, limit: 10, ...(status && { status })});
 
             const response = await axiosConfig.get(`/bookings/user?${queryParams}`);
-            set({ bookings: response.data.bookings, totalPages: response.data.totalPages, currentPage: response.data.currentPage, total: response.data.total, loading: false });
+            set({ 
+                userBookings: response.data.bookings,
+                totalPages: response.data.totalPages, 
+                currentPage: response.data.currentPage, 
+                total: response.data.total, 
+                loading: false 
+            });
         } catch (error) {
-            set({   error: error.response?.data?.message || "Error fetching rental applications",loading: false });
+            set({   
+                error: error.response?.data?.message || "Error fetching rental applications",
+                loading: false 
+            });
         }
     },
 
-    fetchBookingById: async (id) => {
+    fetchBookingById: async (userId) => {
         try {
             set({ loading: true, error: null });
-            const response = await axiosConfig.get(`/bookings/${id}`);
-            set({ currentBooking: response.data.booking, loading: false  });
+            const response = await axiosConfig.get(`/bookings/user?tenant=${userId}`);
+            
+            console.log('Booking Response:', response.data);
+            
+            if (response.data && response.data.bookings) {
+                set({ 
+                    userBookings: response.data.bookings,
+                    loading: false 
+                });
+                return response.data.bookings;
+            } else {
+                set({
+                    userBookings: [],
+                    loading: false
+                });
+                return [];
+            }
         } catch (error) {
-            set({ error: error.response?.data?.message || "Error fetching rental application",loading: false });
+            console.error('Fetch booking error:', error);
+            set({ 
+                error: error.message || "Error fetching bookings",
+                loading: false,
+                userBookings: [] 
+            });
         }
     },
 
@@ -36,7 +65,7 @@ const useBookingStore = create((set, get) => ({
         try {
             set({ loading: true, error: null });
             const response = await axiosConfig.post('/bookings/create', {
-                propertyId: bookingData.propertyId,
+                property: bookingData.property,
                 moveInDate: bookingData.moveInDate,
                 leaseDuration: bookingData.leaseDuration,
                 monthlyRent: bookingData.monthlyRent,
@@ -65,18 +94,16 @@ const useBookingStore = create((set, get) => ({
             const response = await axiosConfig.put(`/bookings/status/${id}`, { status });
 
             set(state => ({
-                bookings: state.bookings.map(booking => 
-                    booking._id === id ? response.data.booking : booking
+                userBookings: state.userBookings.map(booking => 
+                    booking._id === id ? { ...booking, status: 'cancelled' } : booking
                 ),
-                currentBooking: state.currentBooking?._id === id ? 
-                    response.data.booking : state.currentBooking,
                 loading: false
             }));
 
             return response.data;
         } catch (error) {
             set({ 
-                error: error.response?.data?.message || "Error updating rental application status",
+                error: error.response?.data?.message || "Error cancelling booking",
                 loading: false 
             });
             throw error;
@@ -89,7 +116,7 @@ const useBookingStore = create((set, get) => ({
             await axiosConfig.delete(`/bookings/delete/${id}`);
             
             set(state => ({
-                bookings: state.bookings.filter(booking => booking._id !== id),
+                userBookings: state.userBookings.filter(booking => booking._id !== id),
                 currentBooking: state.currentBooking?._id === id ? null : state.currentBooking,
                 loading: false
             }));
@@ -104,7 +131,7 @@ const useBookingStore = create((set, get) => ({
 
     resetStore: () => {
         set({
-            bookings: [],
+            userBookings: [],
             currentBooking: null,
             loading: false,
             error: null,

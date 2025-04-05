@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { NavBar, FootBar } from "./components";
-import  { HomePage, PropertiesPage, PropertyDetailsPage, BookingPage, ProfilePage, LoginPage, SignUp, Dashboard, PropertyRegistration } from "./page";
+import  { HomePage, PropertiesPage, PropertyDetailsPage, BookingPage, ProfilePage, LoginPage, SignUp, Dashboard } from "./page";
 import { useAuthStore, useThemeStore } from "./store";
 import { useEffect } from "react";
 import { Loader } from "lucide-react"
@@ -13,7 +13,6 @@ function App() {
   useEffect(()=>{
      checkAuth();
   },[checkAuth])
-
   if(!user && loading){
     return (
       <div className="min-h-screen flex justify-center items-center">
@@ -33,13 +32,12 @@ function App() {
         <Route path="/about" element={user?<About />:<Navigate to="/login" />} />
         <Route path="/contact" element={user?<Contact />:<Navigate to="/login" />} />
         <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
-        <Route path="/dashboard" element={user?<Dashboard />:<Navigate to="/login" />} />
+        <Route path="/dashboard/:id" element={user?<Dashboard />:<Navigate to="/login" />} />
         <Route path="/properties" element={user?<PropertiesPage />:<Navigate to="/login" />} />
         <Route path="/properties/:id" element={user?<PropertyDetailsPage />:<Navigate to="/login" />} />
         <Route path="/booking/:id" element={user?<BookingPage />:<Navigate to="/login" />} />
         <Route path="/login" element={!user?<LoginPage />:<Navigate to="/" />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path="/owner/property-registration" element={<PropertyRegistration />} />
       </Routes>
       <FootBar />
     </div>

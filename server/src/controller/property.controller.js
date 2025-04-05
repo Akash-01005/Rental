@@ -1,60 +1,9 @@
 import propertyModel from '../models/property.js';
 
-export const createProperty = async (req, res) => {
-    try {
-        // Check if propertyData exists in request body
-        if (!req.body.propertyData) {
-            return res.status(400).json({ 
-                status: false,
-                message: "Property data is required" 
-            });
-        }
-
-        let propertyData;
-        try {
-            propertyData = JSON.parse(req.body.propertyData);
-        } catch (error) {
-            return res.status(400).json({ 
-                status: false,
-                message: "Invalid property data format" 
-            });
-        }
-
-        // Update image URLs to use the client-side path
-        const imageUrls = req.files?.map(file => `/uploads/${file.filename}`) || [];
-        
-        // Create property with image URLs
-        const property = await propertyModel.create({
-            ...propertyData,
-            images: imageUrls,
-            owner: req.user._id // Set from authenticated user
-        });
-
-        // Populate owner details
-        await property.populate('owner');
-
-        return res.status(201).json({
-            status: true,
-            message: "Property created successfully",
-            property
-        });
-
-    } catch (error) {
-        console.error('Create property error:', error);
-        return res.status(500).json({
-            status: false,
-            message: error.message || "Failed to create property"
-        });
-    }
-};
-
 export const getAllProperties = async (req, res) => {
     try {
         const { page = 1, limit = 10, search, minPrice, maxPrice, city, bedrooms, foodPreference, religionPreference, petsAllowed } = req.query;
-
         const query = {};
-
-        // Add filters
         if (search) {
             query.$or = [
                 { title: { $regex: search, $options: 'i' } },
@@ -74,10 +23,8 @@ export const getAllProperties = async (req, res) => {
         if (religionPreference) query.religionPreference = religionPreference;
         if (petsAllowed !== undefined) query.petsAllowed = petsAllowed === 'true';
 
-        // Get total count for pagination
         const total = await propertyModel.countDocuments(query);
 
-        // Get paginated results
         const properties = await propertyModel.find(query)
             .populate('owner', 'name email phone')
             .limit(Number(limit))
@@ -127,46 +74,3 @@ export const getPropertyById = async (req, res) => {
     }
 };
 
-export const updateProperty = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updates = req.body;
-        const property = await propertyModel.findById(id);
-
-        if (!property) {
-            return res.status(404).json({ message: "Property not found" });
-        }
-        if (property.owner.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: "Not authorized to update this property" });
-        }
-
-        if (req.files?.length) {
-            updates.images = [...property.images, ...req.files.map(file => file.path)];
-        }
-
-        const updatedProperty = await propertyModel.findByIdAndUpdate(id, updates, { new: true });
-
-        return res.status(200).json({ property: updatedProperty, message: "Property updated successfully" });
-    } catch (error) {
-        return res.status(500).json({ message: error?.message || "Error updating property" });
-    }
-};
-
-export const deleteProperty = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const property = await propertyModel.findById(id);
-
-        if (!property) {
-            return res.status(404).json({ message: "Property not found" });
-        }
-        if (property.owner.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: "Not authorized to delete this property" });
-        }
-
-        await propertyModel.findByIdAndDelete(id);
-        return res.status(200).json({ message: "Property deleted successfully" });
-    } catch (error) {
-        return res.status(500).json({ message: error?.message || "Error deleting property" });
-    }
-};

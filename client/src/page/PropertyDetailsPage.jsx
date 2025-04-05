@@ -207,7 +207,6 @@ console.log(currentProperty)
                         </div>
                     </div>
 
-                    {/* Sidebar */}
                     <div className="col-span-1">
                         <div className={`p-6 rounded-lg ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
                             {/* Price Details */}
@@ -220,7 +219,7 @@ console.log(currentProperty)
                                 </div>
                             </div>
 
-                            {/* Owner Details */}
+
                             {currentProperty.ownerDetails && (
                                 <div className="mb-6">
                                     <h3 className="text-lg font-semibold mb-2">Owner Details</h3>
@@ -247,7 +246,7 @@ console.log(currentProperty)
                             )}
 
                             {/* Book Now Button */}
-                            {currentProperty.status === 'Available' && (
+                            {currentProperty.status === 'available' && (
                                 <button
                                     onClick={() => navigate(`/booking/${currentProperty._id}`)}
                                     className="w-full py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"

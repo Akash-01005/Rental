@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store";
 import { FaSpinner } from "react-icons/fa";
 
@@ -43,8 +43,10 @@ const LoginPage = () => {
             "Login"
           )}
         </button>
-        <p className="text-center underline text-blue-600 mt-1 cursor-pointer">Forgot Password?</p>
-        <p className="text-center mt-1">{"Don't"} have an account? <span className="text-blue-600 underline cursor-pointer">Sign up.</span></p>
+        <div className="flex gap-1 justify-center items-center">
+           <p>Forgot Password?</p>
+           <Link to="/signup" className="text-blue-600 underline">sign up!</Link>
+        </div>
       </form>
     </div>
   );

@@ -5,12 +5,11 @@ const useAuthStore = create((set) => ({
   user: null,
   loading: false,
   error: null,
+  status: false,
 
   setUser: (user) => set({ user }),
   setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
-
-  
 
   login: async (formData) => {
     set({ loading: true, error: null });
@@ -51,6 +50,16 @@ const useAuthStore = create((set) => ({
     } catch (err) {
       set({ error: err.response?.data?.message || err.message, loading: false });
     }
+  },
+
+  signup: async(data)=>{
+    set({loading:true,error:null});
+      try {
+        const res = await axiosConfig.post("/auth/signup", data);
+        set({ user: res.data.user, loading: false });
+      } catch (err) {
+        set({ error: err.response?.data?.message || err.message, loading: false });
+      }
   },
 
   forgotPassword: async (email) => {

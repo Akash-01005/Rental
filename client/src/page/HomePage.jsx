@@ -1,4 +1,4 @@
-import { useThemeStore } from '../store';
+import { useAuthStore, useThemeStore } from '../store';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaMapMarkerAlt, FaBed, FaRupeeSign } from 'react-icons/fa';
 import { useState } from 'react';
@@ -7,6 +7,8 @@ const HomePage = () => {
   const { theme } = useThemeStore();
   const navigate = useNavigate();
   const [searchLocation, setSearchLocation] = useState('');
+  const { user } = useAuthStore();
+  console.log(user);
 
   const handleSearch = () => {
     if (searchLocation.trim()) {

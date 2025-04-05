@@ -87,9 +87,20 @@ const BookingPage = () => {
       await createBooking({
         ...bookingData,
         property: id,
-        user: user._id
+        tenant: user._id,
+        monthlyRent: currentProperty.price,
+        securityDeposit: currentProperty.price * 2,
+        moveInDate: bookingData.moveInDate,
+        leaseDuration: bookingData.leaseDuration,
+        tenantDetails: {
+          ...bookingData.tenantDetails,
+          occupation: bookingData.tenantDetails.occupation || 'Not specified',
+          workplace: bookingData.tenantDetails.workplace || 'Not specified'
+        },
+        contactNumber: bookingData.contactNumber || user.contactNo,
+        utilityIncluded: bookingData.utilityIncluded
       });
-      navigate('/profile');
+      navigate(`/dashboard/${id}`);
     } catch (err) {
       console.error('Booking failed:', err);
     }

@@ -19,10 +19,6 @@ const userSchema = mongoose.Schema({
         enum: ["user","owner"],
         default: "user" 
     },
-    profilePic:{
-        type: String,
-        defalut: null
-    },
     contactNo:{
         type: String,
     }

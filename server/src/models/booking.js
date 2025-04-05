@@ -6,11 +6,11 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Property',
     required: [true, "Property is required"]
   },
-  // tenant: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: 'Auth',
-  //   required: [true, "Tenant is required"]
-  // },
+  tenant: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Auth',
+    required: [true, "Tenant is required"]
+  },
   moveInDate: {
     type: Date,
     required: [true, "Move-in date is required"]
@@ -32,7 +32,7 @@ const bookingSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: {
-      values: ['pending', 'approved', 'rejected', 'active', 'completed'],
+      values: ['pending', 'approved', 'rejected', 'cancelled', 'active', 'completed'],
       message: "Invalid booking status"
     },
     default: 'pending'

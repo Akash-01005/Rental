@@ -5,6 +5,8 @@ const NavBar = () => {
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
 
+  console.log(user)
+
   return (
     <nav className={`${theme === "dark" ? "bg-gray-800" : "bg-white"} z-50 sticky top-0 shadow-lg`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -24,7 +26,7 @@ const NavBar = () => {
             </button>
             {user ? (
               <>
-                <Link to="/dashboard" className={`${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-800 hover:text-indigo-600"} px-3 py-2 rounded-md text-sm font-medium`}>Dashboard</Link>
+                <Link to={`/dashboard/${user.userId}`} className={`${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-800 hover:text-indigo-600"} px-3 py-2 rounded-md text-sm font-medium`}>Dashboard</Link>
                 <button onClick={logout} className={`${theme === "dark" ? "text-gray-300 hover:text-white" : "text-gray-800 hover:text-indigo-600"} px-3 py-2 rounded-md text-sm font-medium`}>Logout</button>
               </>
             ) : (

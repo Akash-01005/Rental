@@ -3,21 +3,25 @@ export const dummyUsers = [
         userName: "Rajesh Kumar",
         email: "rajesh.kumar@gmail.com",
         password: "Password123!",
+        role:"user"
     },
     {
         userName: "Priya Sharma",
         email: "priya.sharma@gmail.com",
         password: "Password123!",
+        role:"user"
     },
     {
         userName: "Abdul Rahman",
         email: "abdul.rahman@gmail.com",
         password: "Password123!",
+        role:"owner"
     },
     {
         userName: "Mary Thomas",
         email: "mary.thomas@gmail.com",
         password: "Password123!",
+        role:"user"
     }
 ];
 

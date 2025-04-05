@@ -4,7 +4,7 @@ import { useAuthStore } from "../store";
 import { FaSpinner } from "react-icons/fa";
 
 const SignUp = () => {
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [formData, setFormData] = useState({ userName: "", email: "", password: ""});
   const [show, setShow] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const { signup, loading, error } = useAuthStore();
@@ -12,13 +12,14 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
+    // if (formData.password !== formData.confirmPassword) {
+    //   alert("Passwords do not match");
+    //   return;
+    // }
     await signup(formData);
     navigate("/");
   };
+  console.log(formData)
 
   return (
     <div className="h-screen flex justify-center items-center">
@@ -30,7 +31,7 @@ const SignUp = () => {
           <input
             type="text"
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
             className="border rounded-md p-1 focus:outline-none"
           />
         </div>
@@ -62,17 +63,7 @@ const SignUp = () => {
             </span>
           </div>
         </div>
-        <div className="flex flex-col">
-          <label htmlFor="confirmPassword">Confirm Password</label>
-          <div className="flex">
-            <input
-              type={show ? "text" : "password"}
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              className="border w-full rounded-md p-1 focus:outline-none"
-            />
-          </div>
-        </div>
+        
         <button
           type="submit"
           disabled={loading || !acceptTerms}

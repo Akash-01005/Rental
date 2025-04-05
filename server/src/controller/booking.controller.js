@@ -1,6 +1,5 @@
 import bookingModel from '../models/booking.js';
 import propertyModel from '../models/property.js';
-import { emitBookingCreated, emitBookingStatusChanged } from '../libs/socket.js';
 
 export const createBooking = async (req, res) => {
     try {
@@ -25,11 +24,14 @@ export const createBooking = async (req, res) => {
             tenantDetails,
             utilityIncluded,
             specialRequests,
-            contactNumber
+            contactNumber,
+            status: 'pending'
         });
 
-        // Emit socket event for real-time updates
-        emitBookingCreated(booking);
+        await booking.populate([
+            { path: 'property', select: 'title location price images' },
+            { path: 'tenant', select: 'name email contactNo' }
+        ]);
 
         return res.status(201).json({ booking, message: "Booking created successfully" });
     } catch (error) {
@@ -45,15 +47,29 @@ export const getUserBookings = async (req, res) => {
         if (status) query.status = status;
 
         const bookings = await bookingModel.find(query)
-            .populate('property')
+            .populate({
+                path: 'property',
+                select: 'title location price images'
+            })
+            .populate({
+                path: 'tenant',
+                select: 'name email contactNo'
+            })
             .limit(Number(limit))
             .skip((Number(page) - 1) * Number(limit))
             .sort({ createdAt: -1 });
 
         const total = await bookingModel.countDocuments(query);
 
-        return res.status(200).json({ bookings, totalPages: Math.ceil(total / limit), currentPage: Number(page), total, message: "Rental applications fetched successfully" });
+        return res.status(200).json({ 
+            bookings, 
+            totalPages: Math.ceil(total / limit), 
+            currentPage: Number(page), 
+            total, 
+            message: "Rental applications fetched successfully" 
+        });
     } catch (error) {
+        console.error('Get user bookings error:', error);
         return res.status(500).json({ message: error?.message || "Error fetching rental applications" });
     }
 };
@@ -61,10 +77,10 @@ export const getUserBookings = async (req, res) => {
 export const getBookingById = async (req, res) => {
     try {
         const { id } = req.params;
-        const booking = await bookingModel.findById(id)
+        const booking = await bookingModel.find({tenant:id})
             .populate('property')
             .populate('tenant', 'name email');
-
+        console.log(booking);
         if (!booking) {
             return res.status(404).json({ message: "Rental application not found" });
         }
@@ -84,27 +100,50 @@ export const updateBookingStatus = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
-        if (!['pending', 'approved', 'rejected', 'active', 'completed'].includes(status)) {
+        // Validate status
+        const validStatuses = ['pending', 'approved', 'rejected', 'cancelled', 'active', 'completed'];
+        if (!validStatuses.includes(status)) {
             return res.status(400).json({ message: "Invalid status" });
         }
 
-        const booking = await bookingModel.findById(id);
+        // Find the booking and populate property details
+        const booking = await bookingModel.findById(id)
+            .populate('property', 'title location price images')
+            .populate('tenant', 'name email contactNo');
+
         if (!booking) {
-            return res.status(404).json({ message: "Rental application not found" });
+            return res.status(404).json({ message: "Booking not found" });
         }
 
-        if (booking.tenant.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: "Not authorized to update this rental application" });
+        // Check authorization
+        if (booking.tenant._id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Not authorized to update this booking" });
         }
 
+        // Additional validation for cancellation
+        if (status === 'cancelled') {
+            if (booking.status !== 'pending') {
+                return res.status(400).json({ 
+                    message: "Only pending bookings can be cancelled" 
+                });
+            }
+        }
+
+        // Update the booking status
         booking.status = status;
         await booking.save();
 
-        emitBookingStatusChanged(booking);
-
-        return res.status(200).json({ booking, message: "Rental application status updated successfully" });
+        return res.status(200).json({ 
+            booking,
+            message: status === 'cancelled' 
+                ? "Booking cancelled successfully" 
+                : "Booking status updated successfully"
+        });
     } catch (error) {
-        return res.status(500).json({ message: error?.message || "Error updating rental application status" });
+        console.error('Update booking status error:', error);
+        return res.status(500).json({ 
+            message: error?.message || "Error updating booking status" 
+        });
     }
 };
 
@@ -125,5 +164,46 @@ export const deleteBooking = async (req, res) => {
         return res.status(200).json({ message: "Rental application deleted successfully" });
     } catch (error) {
         return res.status(500).json({ message: error?.message || "Error deleting rental application" });
+    }
+};
+
+export const cancelBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find the booking and populate property details
+        const booking = await bookingModel.findById(id)
+            .populate('property', 'title location price images')
+            .populate('tenant', 'name email contactNo');
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found" });
+        }
+
+        // Check authorization
+        if (booking.tenant._id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "Not authorized to cancel this booking" });
+        }
+
+        // Validate booking can be cancelled
+        if (booking.status !== 'pending') {
+            return res.status(400).json({ 
+                message: "Only pending bookings can be cancelled" 
+            });
+        }
+
+        // Update the booking status to cancelled
+        booking.status = 'cancelled';
+        await booking.save();
+
+        return res.status(200).json({ 
+            booking,
+            message: "Booking cancelled successfully" 
+        });
+    } catch (error) {
+        console.error('Cancel booking error:', error);
+        return res.status(500).json({ 
+            message: error?.message || "Error cancelling booking" 
+        });
     }
 };

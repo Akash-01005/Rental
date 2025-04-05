@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { axiosConfig } from '../libs';
 
-const usePropertyStore = create((set, get) => ({
+const usePropertyStore = create((set) => ({
     properties: [],
     currentProperty: null,
     loading: false,
@@ -9,49 +9,32 @@ const usePropertyStore = create((set, get) => ({
     totalPages: 0,
     currentPage: 1,
     total: 0,
-
     filters: {
-        search: '',
         minPrice: '',
         maxPrice: '',
         city: '',
         bedrooms: '',
         foodPreference: '',
         religionPreference: '',
-        petsAllowed: undefined
+        petsAllowed: false,
+        carParking: false,
+        bikeParking: false
     },
 
     setFilters: (newFilters) => {
-        set({ filters: { ...get().filters, ...newFilters } });
-        get().fetchProperties(1); // Reset to first page when filters change
+        set({ filters: newFilters });
     },
 
     fetchProperties: async (page = 1) => {
         try {
             set({ loading: true, error: null });
-            const filters = get().filters;
-            
-            const queryParams = new URLSearchParams({
-                page,
-                limit: 10,
-                ...(filters.search && { search: filters.search }),
-                ...(filters.minPrice && { minPrice: filters.minPrice }),
-                ...(filters.maxPrice && { maxPrice: filters.maxPrice }),
-                ...(filters.city && { city: filters.city }),
-                ...(filters.bedrooms && { bedrooms: filters.bedrooms }),
-                ...(filters.foodPreference && { foodPreference: filters.foodPreference }),
-                ...(filters.religionPreference && { religionPreference: filters.religionPreference }),
-                ...(filters.petsAllowed !== undefined && { petsAllowed: filters.petsAllowed })
-            });
-
-            const response = await axiosConfig.get(`/properties/all?${queryParams}`);
-            
-            set({
+            const response = await axiosConfig.get(`/properties?page=${page}`);
+            set({ 
                 properties: response.data.properties,
-                totalPages: response.data.totalPages,
-                currentPage: response.data.currentPage,
+                totalPages: response.data.totalPages, 
+                currentPage: response.data.currentPage, 
                 total: response.data.total,
-                loading: false
+                loading: false 
             });
         } catch (error) {
             set({ 
@@ -74,58 +57,24 @@ const usePropertyStore = create((set, get) => ({
         }
     },
 
-    createProperty: async (formData) => {
+    createProperty: async (propertyData) => {
         try {
             set({ loading: true, error: null });
-            
-            const response = await axiosConfig.post('/properties/create', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-
-            if (response.data.property) {
-                await get().fetchProperties();
-                set({ loading: false });
-                return response.data;
-            } else {
-                throw new Error('Failed to create property');
-            }
+            const response = await axiosConfig.post('/properties/create', propertyData);
+            return response.data;
         } catch (error) {
             set({ 
-                error: error.response?.data?.message || 'Failed to create property',
+                error: error.response?.data?.message || "Error creating property",
                 loading: false 
             });
             throw error;
         }
     },
 
-    updateProperty: async (id, updates) => {
+    updateProperty: async (id, propertyData) => {
         try {
             set({ loading: true, error: null });
-            const formData = new FormData();
-            
-            Object.keys(updates).forEach(key => {
-                if (key === 'images') {
-                    updates.images.forEach(image => {
-                        formData.append('images', image);
-                    });
-                } else if (typeof updates[key] === 'object') {
-                    formData.append(key, JSON.stringify(updates[key]));
-                } else {
-                    formData.append(key, updates[key]);
-                }
-            });
-
-            const response = await axiosConfig.put(`/properties/update/${id}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
-            if (get().currentProperty?._id === id) {
-                set({ currentProperty: response.data.property });
-            }
-
-            await get().fetchProperties();
+            const response = await axiosConfig.put(`/properties/${id}`, propertyData);
             set({ loading: false });
             return response.data;
         } catch (error) {
@@ -140,14 +89,11 @@ const usePropertyStore = create((set, get) => ({
     deleteProperty: async (id) => {
         try {
             set({ loading: true, error: null });
-            await axiosConfig.delete(`/properties/delete/${id}`);
-            
+            await axiosConfig.delete(`/properties/${id}`);
             set(state => ({
-                properties: state.properties.filter(prop => prop._id !== id),
+                properties: state.properties.filter(property => property._id !== id),
                 loading: false
             }));
-
-            await get().fetchProperties();
         } catch (error) {
             set({ 
                 error: error.response?.data?.message || "Error deleting property",
@@ -167,14 +113,15 @@ const usePropertyStore = create((set, get) => ({
             currentPage: 1,
             total: 0,
             filters: {
-                search: '',
                 minPrice: '',
                 maxPrice: '',
                 city: '',
                 bedrooms: '',
                 foodPreference: '',
                 religionPreference: '',
-                petsAllowed: undefined
+                petsAllowed: false,
+                carParking: false,
+                bikeParking: false
             }
         });
     }

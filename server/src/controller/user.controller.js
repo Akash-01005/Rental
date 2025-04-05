@@ -2,7 +2,6 @@ import bcrypt from 'bcrypt';
 import userModel from '../models/user.js';
 import jwt from "jsonwebtoken"
 import nodemailer from "nodemailer";
-import { uploadImage, deleteImage, updateImage } from '../libs/cloudinary.js';
 
 
 export const signUp = async(req,res)=>{
@@ -18,7 +17,7 @@ export const signUp = async(req,res)=>{
             return res.status(401).json({status: false, message: "User Already Exists!!"});
         }
    }catch(error){
-        return res.status(500).json({status: false, message: "Internal Server Error!!"});
+        return res.status(500).json({status: false, message: "Internal Server Error!!",err:error});
    }
 }
 
@@ -31,7 +30,7 @@ export const login = async(req,res)=>{
             if(comparePassword){
                 const token = jwt.sign({id: check._id}, process.env.JWT_SECRET_KEY);
                 res.cookie('token', token, {maxAge: 24*60*60*3600, httpOnly: true});
-                return res.status(200).json({status: true, message: "Authorized User!",user:check});
+                return res.status(200).json({status: true, message: "Authorized User!",userId:check._id});
             }
             return res.status(401).json({status: false, message: "Wrong Password!!"});
         }
@@ -100,8 +99,9 @@ export const forgotPassword = async(req,res)=>{
 
 export const checkAuth = (req,res)=>{
     try {
-        return res.status(200).json({status: true, message: "Authenticated User!"});
+        return res.status(200).json({status: true, message: "Authenticated User!",userId:req.user._id});
     } catch (error) {
+        console.log(error)
         return res.status(500).json({status: false, message: "Internal Server Error!!"});
     }
 }
@@ -111,61 +111,3 @@ export const logout =(req,res)=>{
     return res.status(200).json({status: true, message: "User logged Out Successfully!"});
 }
 
-export const updateProfile = async (req, res) => {
-  try {
-    const { userName, contactNo, profilePic } = req.body;
-    const userId = req.user._id;
-
-    // Get current user to check if profile pic needs updating
-    const currentUser = await userModel.findById(userId);
-    
-    let updatedProfilePic = profilePic;
-
-    // If there's a new profile pic and an old one exists, update it
-    if (profilePic && currentUser.profilePic && profilePic !== currentUser.profilePic) {
-      const oldPublicId = currentUser.profilePic.split('/').pop().split('.')[0];
-      await deleteImage(oldPublicId);
-      updatedProfilePic = profilePic;
-    }
-
-    const updatedUser = await userModel.findByIdAndUpdate(
-      userId,
-      { 
-        userName,
-        contactNo,
-        profilePic: updatedProfilePic
-      },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    res.status(200).json({ user: updatedUser });
-  } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Failed to update profile' });
-  }
-};
-
-export const uploadProfileImage = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image file provided' });
-    }
-
-    const result = await uploadImage(req.file);
-    
-    // Update user's profile picture in database
-    const updatedUser = await userModel.findByIdAndUpdate(
-      req.user._id,
-      { profilePic: result.url },
-      { new: true }
-    ).select('-password');
-
-    res.status(200).json({ 
-      imageUrl: result.url,
-      user: updatedUser
-    });
-  } catch (error) {
-    console.error('Image upload error:', error);
-    res.status(500).json({ message: 'Failed to upload image' });
-  }
-};
